@@ -1,30 +1,58 @@
 import os
 import sys
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column, relationship
-from sqlalchemy import create_engine, String, ForeignKey
+from sqlalchemy import Column, ForeignKey, Integer, String, Enum as sqlalchemy_enum
+from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy import create_engine
 from eralchemy2 import render_er
+from enum import Enum
 
 Base = declarative_base()
 
-class Person(Base):
-    __tablename__ = 'person'
-    # Here we define columns for the table person
-    # Notice that each column is also a normal Python instance attribute.
-    id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(nullable=False)
-    address: Mapped["Address"] = relationship(back_populates="person")
+class MediaEnum(Enum):
+    PHOTO = "PHOTO"
+    VIDEO = "VIDEO"
 
+class User(Base):
+    __tablename__ = 'user'
+    id = Column(Integer, primary_key=True)
+    username = Column(String(250), nullable=False)
+    firstname = Column(String(250), nullable=False)
+    lastname = Column(String(250), nullable=False)
+    email = Column(String(250), nullable=False)
+    password = Column(String(250), nullable=False)
+    planet = relationship("planet", backref="user")
+    character = relationship("character", backref="user")
+    favorite = relationship("favorite", backref="user")
 
-class Address(Base):
-    __tablename__ = 'address'
-    # Here we define columns for the table address.
-    # Notice that each column is also a normal Python instance attribute.
-    id: Mapped[int] = mapped_column(primary_key=True)
-    street_name: Mapped[str]
-    street_number: Mapped[str]
-    post_code: Mapped[str] = mapped_column(nullable=False)
-    person_id: Mapped[int] = mapped_column(ForeignKey("person.id"))
-    person: Mapped["Person"] = relationship(back_populates="address")
+class Planet(Base):
+    __tablename__ = 'planet'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id"))
+    favorite = relationship("favorite", backref="planet")
+    media = relationship("media", backref="planet")
+
+class Character(Base):
+    __tablename__ = 'character'
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("user.id"))
+    favorite = relationship("favorite", backref="character")
+    media = relationship("media", backref="character")
+
+class Media(Base):
+    __tablename__ = 'media'
+    id = Column(Integer, primary_key=True)
+    mediatype = Column(sqlalchemy_enum(MediaEnum))
+    url = Column(String(250), nullable=False)
+    planet_id = Column(Integer, ForeignKey("planet.id"))
+    character_id = Column(Integer, ForeignKey("character.id"))
+    
+class Favorite(Base):
+    __tablename__ = 'favorite'
+    id = Column(Integer, primary_key=True)
+    author_id = Column(Integer, ForeignKey("user.id"))
+    planet_id = Column(Integer, ForeignKey("planet.id"))
+    character = Column(Integer, ForeignKey("character.id"))
+
 
     def to_dict(self):
         return {}
